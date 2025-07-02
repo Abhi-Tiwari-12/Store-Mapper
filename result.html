@@ -6,17 +6,29 @@
     <title>TSC Store Mapper 2.0 - Results</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
-            background: linear-gradient(to bottom right, #1e40af, #3b82f6);
             font-family: 'Inter', sans-serif;
+            background: #F7FAFC;
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        .sidebar-hidden {
+            transform: translateX(-100%);
         }
         .card {
-            transform: translateY(0);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
         .btn {
@@ -28,68 +40,89 @@
         .progress-bar {
             transition: width 0.3s ease;
         }
-        table {
-            table-layout: fixed;
+        table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #F3F4F6;
+        }
+        table tbody tr:hover {
+            background: #F9FAFB;
+        }
+        .nav-item:hover, .nav-item.active {
+            background-color: #2DD4BF;
+            color: #FFFFFF;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
             width: 100%;
-        }
-        th, td {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .pincode-header {
-            background-color: #1e40af;
-            color: white;
-            font-weight: 700;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-bottom: 0.5rem;
+            z-index: 20;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <div class="max-w-7xl mx-auto py-4 px-6">
-            <h1 class="text-2xl font-bold text-blue-900">TSC Store Mapper 2.0</h1>
+<body class="min-h-screen flex">
+    <aside class="sidebar fixed top-0 left-0 h-full w-64 bg-gray-900 text-white p-6 flex flex-col z-30 md:flex">
+        <div class="flex items-center mb-8">
+            <i class="fas fa-store text-2xl text-teal-400 mr-2"></i>
+            <h2 class="text-xl font-bold">TSC Mapper</h2>
         </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-grow p-8">
-        <div class="max-w-5xl mx-auto">
-            <h2 class="text-xl font-semibold text-gray-800 mb-6">Store Results</h2>
-            <div class="mb-6 bg-white p-6 rounded-xl shadow-lg card">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-medium text-gray-700">Processing Progress</span>
-                    <span id="progressText" class="text-sm font-medium text-blue-700">0%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div id="progressBar" class="bg-blue-600 h-3 rounded-full progress-bar" style="width: 0%"></div>
+        <nav class="flex-1">
+            <ul class="space-y-2">
+                <li><a href="Mapper.html" class="nav-item flex items-center p-2 rounded-lg"><i class="fas fa-home mr-2"></i>Home</a></li>
+                <li><a href="result.html" class="nav-item flex items-center p-2 rounded-lg bg-teal-500 text-white active"><i class="fas fa-table mr-2"></i>Results</a></li>
+                <li><a href="index.html" class="nav-item flex items-center p-2 rounded-lg"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a></li>
+            </ul>
+        </nav>
+        <button id="sidebarToggle" class="md:hidden absolute top-4 right-4 text-white"><i class="fas fa-bars text-xl"></i></button>
+    </aside>
+    <div class="flex-1 flex flex-col md:ml-64">
+        <header class="bg-white shadow sticky top-0 z-20">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900">Results</h1>
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-600 mr-4">Admin User</span>
+                    <i class="fas fa-user-circle text-2xl text-teal-400"></i>
                 </div>
             </div>
-            <button id="exportBtn" class="hidden mb-6 bg-green-600 text-white py-3 px-6 rounded-lg font-medium btn hover:bg-green-700">Export to Excel</button>
-            <div id="results" class="space-y-6"></div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-4">
-        <div class="max-w-7xl mx-auto text-center">
-            <p class="text-sm font-medium">Product by Abhishek Tiwari</p>
-        </div>
-    </footer>
-
+        </header>
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Store Results</h2>
+                <div class="bg-white p-6 rounded-xl shadow-lg card mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700">Progress</span>
+                        <span id="progressText" class="text-sm font-medium text-teal-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-teal-500 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button id="exportBtn" class="hidden mb-6 w-full bg-green-600 text-white py-3 rounded-lg font-medium btn flex items-center justify-center hover:bg-green-700"><i class="fas fa-file-excel mr-2"></i>Export to Excel</button>
+                <div id="results" class="space-y-6"></div>
+            </div>
+        </main>
+        <footer class="footer bg-gray-900 text-white py-3">
+            <div class="max-w-7xl mx-auto text-center">
+                <p class="text-sm">Product by Abhishek Tiwari | TSC Store Mapper v2.0</p>
+            </div>
+        </footer>
+    </div>
     <script>
         let storeData = [];
-        const targetOrigin = window.location.origin; // e.g., http://127.0.0.1:3000
+        let failedPincodes = [];
+        const targetOrigin = window.location.origin;
+
+        document.getElementById('sidebarToggle').addEventListener('click', () => {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('sidebar-hidden');
+        });
 
         window.addEventListener('message', (event) => {
             if (event.origin !== targetOrigin) {
                 console.warn('Ignoring message from invalid origin:', event.origin);
                 return;
             }
-            console.log('Raw message data:', event.data); // Debug log
             if (typeof event.data !== 'string') {
                 console.warn('Ignoring non-string message:', event.data);
                 return;
@@ -101,32 +134,31 @@
                     return;
                 }
                 const data = message.data;
-                console.log('Parsed data:', data); // Debug log
+                console.log('Parsed data:', { storeDataLength: data.storeData.length, failedPincodesLength: data.failedPincodes.length, storeCount: data.storeCount });
                 storeData = data.storeData;
+                failedPincodes = data.failedPincodes || [];
                 const { total, processed } = data;
 
-                // Update progress bar
                 const progress = Math.min((processed / total) * 100, 100);
                 document.getElementById('progressBar').style.width = `${progress}%`;
                 document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
 
-                // Display results
                 const resultsEl = document.getElementById('results');
-                resultsEl.innerHTML = '';
+                const fragment = document.createDocumentFragment();
                 storeData.forEach(({ pincode, stores }, index) => {
                     const pincodeSection = document.createElement('div');
                     pincodeSection.className = 'mb-6';
                     pincodeSection.innerHTML = `
-                        <h3 class="pincode-header text-lg">Pincode: ${pincode}</h3>
-                        <div class="bg-white p-6 rounded-xl shadow-lg card overflow-x-auto">
+                        <h3 class="text-lg font-semibold text-gray-900 bg-teal-50 p-3 rounded-lg mb-3">Pincode: ${pincode}</h3>
+                        <div class="bg-white p-4 rounded-lg shadow card overflow-x-auto">
                             <table class="w-full text-sm text-gray-600 border-collapse">
                                 <thead>
                                     <tr class="bg-gray-100">
-                                        <th class="border p-2 text-left w-20">Store ID</th>
-                                        <th class="border p-2 text-left w-48">Store Name</th>
-                                        <th class="border p-2 text-left w-24">Distance (km)</th>
-                                        <th class="border p-2 text-left w-24">Map Link</th>
-                                        <th class="border p-2 text-left w-24">Contact</th>
+                                        <th class="border p-2 text-left font-medium">Store ID</th>
+                                        <th class="border p-2 text-left font-medium">Store Name</th>
+                                        <th class="border p-2 text-left font-medium">Distance (km)</th>
+                                        <th class="border p-2 text-left font-medium">Map Link</th>
+                                        <th class="border p-2 text-left font-medium">Contact</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -135,32 +167,59 @@
                                             <td class="border p-2">${store.storeId || 'N/A'}</td>
                                             <td class="border p-2">${store.storeName || 'N/A'}</td>
                                             <td class="border p-2">${store.distance != null ? store.distance : 'N/A'}</td>
-                                            <td class="border p-2"><a href="${store.mapLink || '#'}" target="_blank" class="text-blue-600 hover:underline">${store.mapLink ? 'View Map' : 'N/A'}</a></td>
+                                            <td class="border p-2"><a href="${store.mapLink || '#'}" target="_blank" class="text-teal-600 hover:underline">${store.mapLink ? 'View Map' : 'N/A'}</a></td>
                                             <td class="border p-2">${store.contact || 'N/A'}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
                         </div>
-                        ${index < storeData.length - 1 ? '<hr class="my-4 border-gray-300">' : ''}
+                        ${index < storeData.length - 1 ? '<hr class="my-4 border-gray-200">' : ''}
                     `;
-                    resultsEl.appendChild(pincodeSection);
+                    fragment.appendChild(pincodeSection);
                 });
 
-                // Show export button when complete
+                if (failedPincodes.length) {
+                    const errorSection = document.createElement('div');
+                    errorSection.className = 'mb-6';
+                    errorSection.innerHTML = `
+                        <h3 class="text-lg font-semibold text-gray-900 bg-red-50 p-3 rounded-lg mb-3">Failed Pincodes</h3>
+                        <div class="bg-white p-4 rounded-lg shadow card overflow-x-auto">
+                            <table class="w-full text-sm text-gray-600 border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <th class="border p-2 text-left font-medium">Pincode</th>
+                                        <th class="border p-2 text-left font-medium">Error</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${failedPincodes.map(p => `
+                                        <tr>
+                                            <td class="border p-2">${p.pincode}</td>
+                                            <td class="border p-2">${p.error}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    fragment.appendChild(errorSection);
+                }
+
+                resultsEl.innerHTML = '';
+                resultsEl.appendChild(fragment);
+
                 if (processed >= total) {
                     document.getElementById('exportBtn').classList.remove('hidden');
                 }
             } catch (error) {
                 console.error('Error processing message:', error);
-                document.getElementById('results').innerHTML = `<p class="text-red-600 text-center">Failed to load results: ${error.message}</p>`;
+                document.getElementById('results').innerHTML = `<p class="text-red-500 text-center">Failed to load results: ${error.message}</p>`;
             }
         });
 
         document.getElementById('exportBtn').addEventListener('click', () => {
-            const wsData = [
-                ['Pincode', 'Store ID', 'Store Name', 'Distance (km)', 'Map Link', 'Contact']
-            ];
+            const wsData = [['Pincode', 'Store ID', 'Store Name', 'Distance (km)', 'Map Link', 'Contact']];
             storeData.forEach(({ pincode, stores }) => {
                 stores.forEach(store => {
                     wsData.push([
@@ -173,7 +232,13 @@
                     ]);
                 });
             });
-
+            if (failedPincodes.length) {
+                wsData.push(['Failed Pincodes']);
+                wsData.push(['Pincode', 'Error']);
+                failedPincodes.forEach(p => {
+                    wsData.push([p.pincode, p.error]);
+                });
+            }
             try {
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
                 const wb = XLSX.utils.book_new();
@@ -188,8 +253,12 @@
                 URL.revokeObjectURL(url);
             } catch (error) {
                 console.error('Export error:', error);
-                document.getElementById('results').innerHTML = `<p class="text-red-600 text-center">Failed to export to Excel: ${error.message}</p>`;
+                document.getElementById('results').innerHTML = `<p class="text-red-500 text-center">Failed to export to Excel: ${error.message}</p>`;
             }
+        });
+
+        window.addEventListener('load', () => {
+            console.log('result.html loaded, ready to receive data');
         });
     </script>
 </body>
