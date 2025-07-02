@@ -5,73 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSC Store Mapper 2.0 - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
-            background: linear-gradient(to bottom right, #1e40af, #3b82f6);
             font-family: 'Inter', sans-serif;
+            background: #F7FAFC;
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        .sidebar-hidden {
+            transform: translateX(-100%);
         }
         .card {
-            transform: translateY(0);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
         .btn {
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
         .btn:hover {
+            background-color: #1E3A8A;
             transform: scale(1.05);
+        }
+        .btn:disabled {
+            background-color: #D1D5DB;
+            cursor: not-allowed;
+        }
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.3);
+        }
+        .nav-item:hover {
+            background-color: #2DD4BF;
+            color: #FFFFFF;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 20;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <div class="max-w-7xl mx-auto py-4 px-6">
-            <h1 class="text-2xl font-bold text-blue-900">TSC Store Mapper 2.0</h1>
+<body class="min-h-screen flex">
+    <aside class="sidebar fixed top-0 left-0 h-full w-64 bg-gray-900 text-white p-6 flex flex-col z-30 sidebar-hidden md:flex">
+        <div class="flex items-center mb-8">
+            <i class="fas fa-store text-2xl text-teal-400 mr-2"></i>
+            <h2 class="text-xl font-bold">TSC Mapper</h2>
         </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-grow flex items-center justify-center px-4 py-8">
-        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md card">
-            <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">Sign In</h2>
-            <div class="space-y-5">
-                <div>
-                    <label for="userid" class="block text-sm font-medium text-gray-700">User ID</label>
-                    <input type="text" id="userid" placeholder="Enter User ID" class="mt-1 w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+        <nav class="flex-1">
+            <ul class="space-y-2">
+                <li><a href="#" class="nav-item flex items-center p-2 rounded-lg text-gray-400 cursor-not-allowed"><i class="fas fa-home mr-2"></i>Home</a></li>
+                <li><a href="#" class="nav-item flex items-center p-2 rounded-lg text-gray-400 cursor-not-allowed"><i class="fas fa-table mr-2"></i>Results</a></li>
+                <li><a href="#" class="nav-item flex items-center p-2 rounded-lg text-gray-400 cursor-not-allowed"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+    <div class="flex-1 flex flex-col">
+        <header class="bg-white shadow sticky top-0 z-20">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900">TSC Store Mapper 2.0</h1>
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-600 mr-4">Admin User</span>
+                    <i class="fas fa-user-circle text-2xl text-teal-400"></i>
                 </div>
-                <div>
-                    <label for="passcode" class="block text-sm font-medium text-gray-700">Passcode</label>
-                    <input type="password" id="passcode" placeholder="Enter Passcode" class="mt-1 w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                </div>
-                <button id="loginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium btn hover:bg-blue-700">Sign In</button>
             </div>
-            <p id="error" class="text-red-600 text-sm mt-4 text-center hidden"></p>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-4">
-        <div class="max-w-7xl mx-auto text-center">
-            <p class="text-sm font-medium">Product by Abhishek Tiwari</p>
-        </div>
-    </footer>
-
+        </header>
+        <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+            <div class="bg-white p-8 rounded-xl shadow-lg card max-w-md w-full">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Sign In</h2>
+                <p class="text-sm text-gray-600 mb-6 text-center">Access the TSC Store Mapper</p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                        <input type="text" id="username" aria-label="Enter username" class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-400" placeholder="Enter your username">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="password" aria-label="Enter password" class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-400" placeholder="Enter your password">
+                    </div>
+                    <button id="loginBtn" class="w-full bg-teal-500 text-white py-3 rounded-lg font-medium btn flex items-center justify-center"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</button>
+                    <p id="error" class="text-red-500 text-sm text-center hidden"></p>
+                </div>
+            </div>
+        </main>
+        <footer class="footer bg-gray-900 text-white py-3">
+            <div class="max-w-7xl mx-auto text-center">
+                <p class="text-sm">Product by Abhishek Tiwari | TSC Store Mapper v2.0</p>
+            </div>
+        </footer>
+    </div>
     <script>
         document.getElementById('loginBtn').addEventListener('click', () => {
-            const userid = document.getElementById('userid').value.trim();
-            const passcode = document.getElementById('passcode').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
             const errorEl = document.getElementById('error');
-
             errorEl.classList.add('hidden');
 
-            if (userid === 'tsc@123' && passcode === 'tsc@123') {
+            if (!username || !password) {
+                errorEl.textContent = 'Please enter both username and password';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            if (username === 'tsc@123' && password === 'tsc@123') {
                 window.location.href = 'Mapper.html';
             } else {
-                errorEl.textContent = 'Invalid User ID or Passcode';
+                errorEl.textContent = 'Invalid username or password';
                 errorEl.classList.remove('hidden');
             }
         });
