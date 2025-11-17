@@ -6,184 +6,134 @@
   <title>Pincode Finder - TSC Store Mapper</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background: #F7FAFC; }
+
     .sidebar { transition: transform 0.3s ease; }
-    .sidebar-hidden { transform: translateX(-100%); }
-    .nav-item:hover { background-color: #374151; }
-    .nav-item.active { background-color: #14b8a6; }
+    .nav-item:hover, .nav-item.active { background-color: #2DD4BF !important; color: #fff !important; }
+
+    .card {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
     .dropdown-btn {
       background: white;
-      border: 1.5px solid #d1d5db;
-      padding: 1rem 1.2rem;
-      border-radius: 0.9rem;
+      border: 2px solid #e5e7eb;
+      padding: 1.2rem 1.5rem;
+      border-radius: 1rem;
       cursor: pointer;
       text-align: left;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-weight: 600;
-      font-size: 1rem;
-      transition: all 0.25s ease;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+      font-size: 1.1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
     }
-    .dropdown-btn:hover {
-      border-color: #14b8a6;
-      box-shadow: 0 4px 14px rgba(20,184,166,0.25);
-    }
+    .dropdown-btn:hover { border-color: #14b8a6; box-shadow: 0 10px 30px rgba(20,184,166,0.2); transform: translateY(-2px); }
+
     .dropdown-menu {
       position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      margin-top: 10px;
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(12px);
+      top: 100%; left: 0; right: 0;
+      margin-top: 12px;
+      background: rgba(255,255,255,0.98);
+      backdrop-filter: blur(20px);
       border: 1.5px solid #e5e7eb;
-      border-radius: 1rem;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+      border-radius: 1.2rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.18);
       overflow: hidden;
       z-index: 50;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px) scale(0.98);
-      transition: all 0.25s ease;
+      opacity: 0; visibility: hidden;
+      transform: translateY(-15px) scale(0.95);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .dropdown-menu.open {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0) scale(1);
-    }
+    .dropdown-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+
     .dropdown-item {
-      padding: 1rem 1.2rem;
+      padding: 1.1rem 1.5rem;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid #f1f5f9;
-      transition: all 0.25s ease;
+      gap: 14px;
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: all 0.3s ease;
     }
-    .dropdown-item:last-child { border-bottom: none; }
-    .dropdown-item:hover {
-      background: #ecfdf5;
-      padding-left: 1.5rem;
-    }
-    .dropdown-item.active {
-      background: #ccfbf1;
-      border-left: 4px solid #14b8a6;
-      font-weight: 600;
-    }
-    #storeList::-webkit-scrollbar { width: 8px; }
-    #storeList::-webkit-scrollbar-thumb {
-      background: #2dd4bf;
-      border-radius: 10px;
-    }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f4f6;
-      border-top: 4px solid #14b8a6;
+    .dropdown-item.visible { opacity: 1; transform: translateX(0); }
+    .dropdown-item:hover { background: #ecfdf5; padding-left: 2rem; }
+
+    .spinner-modern {
+      width: 70px; height: 70px;
+      border: 6px solid rgba(255,255,255,0.15);
+      border-top: 6px solid #14b8a6;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
+      animation: spin 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      position: relative;
+    }
+    .spinner-modern::after {
+      content: ''; position: absolute;
+      inset: 6px;
+      border: 6px solid transparent;
+      border-top: 6px solid #5eead4;
+      border-radius: 50%;
+      animation: spin 2s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .results-loading {
+
+    /* OVERLAY ONLY ON MAIN CONTENT - NOT SIDEBAR/HEADER/FOOTER */
+    #contentOverlay {
+      position: fixed;
+      top: 64px;        /* below header (h-16 = 64px) */
+      left: 254px;      /* right of sidebar (w-64 = 256px) */
+      right: 0;
+      bottom: 52px;     /* above footer */
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 2rem;
-      text-align: center;
-      color: #6b7280;
+      justify-content: center;
+      z-index: 998;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease;
     }
-    .loading-message {
-      font-size: 1rem;
-      margin-top: 1rem;
-      color: #374151;
-      font-weight: 500;
+    #contentOverlay.active {
+      opacity: 1;
+      visibility: visible;
     }
-    .results-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      margin-top: 1rem;
-      border-radius: 0.5rem;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .results-table th,
-    .results-table td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .results-table th {
-      background-color: #f9fafb;
-      font-weight: 600;
-      color: #374151;
-    }
-    .results-table th:first-child, .results-table td:first-child {
-      width: 50%;
-      padding-left: 1.5rem;
-    }
-    .results-table th:last-child, .results-table td:last-child {
-      width: 50%;
-      padding-right: 1.5rem;
-    }
-    .results-table tr:hover {
-      background-color: #f8fafc;
-    }
-    .results-table td:first-child {
-      font-family: 'Courier New', monospace;
-      font-weight: 500;
-    }
-    .fetch-btn {
-      background: #14b8a6;
+
+    .fetch-btn, .export-btn {
+      background: linear-gradient(135deg, #14b8a6, #0d9488);
       color: white;
       border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.5rem;
+      padding: 0.9rem 2.5rem;
+      border-radius: 0.75rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
-      margin-top: 1rem;
-      width: 100%;
-      max-width: 200px;
+      box-shadow: 0 8px 25px rgba(20,184,166,0.3);
+      transition: all 0.3s ease;
     }
-    .fetch-btn:hover:not(:disabled) {
-      background: #0d9488;
-      transform: translateY(-1px);
-    }
-    .fetch-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .no-results {
-      text-align: center;
-      padding: 2rem;
-      color: #6b7280;
-    }
-    @media (max-width: 640px) {
-      .results-table {
-        font-size: 0.875rem;
-      }
-      .results-table th,
-      .results-table td {
-        padding: 0.5rem;
-      }
-      .results-table th:first-child, .results-table td:first-child {
-        padding-left: 0.75rem;
-      }
-      .results-table th:last-child, .results-table td:last-child {
-        padding-right: 0.75rem;
-      }
-    }
+    .fetch-btn:hover, .export-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(20,184,166,0.4); }
+    .export-btn { background: linear-gradient(135deg, #10b981, #059669); }
   </style>
 </head>
 <body class="min-h-screen flex">
-  <!-- Sidebar -->
-  <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full w-64 bg-gray-900 text-white p-6 flex flex-col z-30 md:flex">
+
+  <!-- Overlay - NOW ONLY COVERS MAIN CONTENT -->
+  <div id="contentOverlay">
+    <div class="spinner-modern"></div>
+    <p id="loadingText" class="mt-10 text-2xl font-medium text-white tracking-wide">Analyzing your preference...</p>
+  </div>
+
+  <!-- Sidebar - Always visible -->
+  <aside class="fixed top-0 left-0 h-full w-64 bg-gray-900 text-white p-6 flex flex-col z-30">
     <div class="flex items-center mb-8">
       <i class="fas fa-store text-2xl text-teal-400 mr-3"></i>
       <h2 class="text-xl font-bold">TSC Mapper</h2>
@@ -196,15 +146,14 @@
         <li><a href="index.html" class="nav-item flex items-center p-3 rounded-lg"><i class="fas fa-sign-out-alt mr-3"></i>Logout</a></li>
       </ul>
     </nav>
-    <button id="sidebarToggle" class="md:hidden absolute top-4 -right-12 bg-gray-800 p-3 rounded-r-lg text-white shadow-lg">
-      <i class="fas fa-bars text-xl"></i>
-    </button>
   </aside>
 
-  <!-- Main Content -->
-  <div class="flex-1 flex flex-col md:ml-64" id="mainContent">
-    <header class="bg-white shadow sticky top-0 z-20">
-      <div class="max-w-7xl mx-auto py-4 px-6 flex items-center justify-between">
+  <!-- Main Content Area -->
+  <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+    
+    <!-- Header - Always visible -->
+    <header class="bg-white shadow sticky top-0 z-20 h-16">
+      <div class="max-w-7xl mx-auto py-4 px-6 flex items-center justify-between h-full">
         <h1 class="text-2xl font-bold text-gray-900">Pincode Finder</h1>
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600">Admin User</span>
@@ -213,94 +162,79 @@
       </div>
     </header>
 
+    <!-- Main -->
     <main class="flex-1 p-6 lg:p-8">
       <div class="max-w-4xl mx-auto">
-        <div class="bg-white rounded-xl shadow-lg p-8">
-          <h2 class="text-xl font-semibold text-gray-800 mb-6">Select a Store</h2>
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Select a Store to View Serviceable Pincodes</h2>
 
-          <!-- Dropdown -->
+        <div class="card p-8 lg:p-10">
           <div class="relative">
             <button id="dropdownBtn" class="w-full dropdown-btn">
               <span id="selectedStore" class="text-gray-900">Loading stores...</span>
-              <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="chevron"></i>
+              <i class="fas fa-chevron-down text-gray-400 transition-transform duration-300" id="chevron"></i>
             </button>
 
             <div id="dropdownMenu" class="dropdown-menu">
-              <div class="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-                <input type="text" id="searchInput" placeholder="Search store..."
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+              <div class="p-4 border-b sticky top-0 bg-white z-10">
+                <input type="text" id="searchInput" placeholder="Search store..." class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
               </div>
-              <div id="storeList" class="max-h-96 overflow-y-auto">
-                <div class="p-12 text-center text-gray-500">
-                  <div class="spinner"></div>
-                  <p class="mt-4">Loading stores...</p>
-                </div>
-              </div>
+              <div id="storeList" class="max-h-96 overflow-y-auto"></div>
             </div>
           </div>
 
-          <!-- Fetch Button -->
-          <button id="fetchBtn" class="fetch-btn hidden" onclick="fetchPincodesForSelected()">
-            <i class="fas fa-search mr-2"></i>Fetch Pincodes
-          </button>
+          <div class="flex justify-center mt-8">
+            <button id="fetchBtn" class="fetch-btn hidden">
+              <i class="fas fa-search mr-2"></i>Fetch Pincodes
+            </button>
+          </div>
+        </div>
 
-          <!-- Results Section -->
-          <div id="resultsSection" class="mt-8 hidden">
-            <div id="resultsContent" class="results-loading">
-              <div class="spinner"></div>
-              <p class="loading-message" id="loadingMessage">Analyzing your preference...</p>
-            </div>
+        <div id="resultsSection" class="mt-8 hidden">
+          <div class="card p-8">
+            <div id="resultsContent"></div>
           </div>
         </div>
       </div>
     </main>
 
-    <footer class="bg-gray-900 text-white py-6 text-center text-sm">
-      Product by Abhishek Tiwari | TSC Store Mapper v2.0
+    <!-- Footer - Always visible -->
+    <footer class="bg-gray-900 text-white py-4 text-center text-sm mt-auto">
+      Product by Abhishek Tiwari | TSC Store Mapper v2.1 — Premium Edition
     </footer>
   </div>
 
   <script>
-    // Elements
     const dropdownBtn = document.getElementById('dropdownBtn');
     const dropdownMenu = document.getElementById('dropdownMenu');
     const searchInput = document.getElementById('searchInput');
     const storeList = document.getElementById('storeList');
     const chevron = document.getElementById('chevron');
     const selectedStore = document.getElementById('selectedStore');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const mainContent = document.getElementById('mainContent');
     const fetchBtn = document.getElementById('fetchBtn');
     const resultsSection = document.getElementById('resultsSection');
     const resultsContent = document.getElementById('resultsContent');
-    const loadingMessage = document.getElementById('loadingMessage');
+    const contentOverlay = document.getElementById('contentOverlay');
+    const loadingText = document.getElementById('loadingText');
 
     let allStores = [];
-    let selectedStoreObj = null;
+    let selectedStoreName = null;
     let messageTimeouts = [];
+    let currentResults = [];
 
     const loadingMessages = [
       "Analyzing your preference...",
-      "Fetching the pincodes...",
+      "Fetching pincodes from server...",
       "Calculating distances...",
-      "Generating tabular data...",
-      "Almost ready! Optimizing results..."
+      "Preparing results...",
+      "Almost ready!"
     ];
 
-    // Sidebar Toggle (Mobile)
-    sidebarToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('sidebar-hidden');
-      mainContent.classList.toggle('md:ml-0', sidebar.classList.contains('sidebar-hidden'));
-    });
-
-    // Dropdown Toggle
-    dropdownBtn.onclick = (e) => {
+    dropdownBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       dropdownMenu.classList.toggle('open');
       chevron.classList.toggle('rotate-180');
       if (dropdownMenu.classList.contains('open')) searchInput.focus();
-    };
+    });
 
     document.addEventListener('click', (e) => {
       if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
@@ -309,173 +243,149 @@
       }
     });
 
-    // Render store list (simple, no bubble)
-    function renderStores(list) {
-      if (list.length === 0) {
-        storeList.innerHTML = `<div class="p-8 text-center text-gray-500">No stores found</div>`;
-        return;
-      }
-      storeList.innerHTML = list.map(store => `
-        <div class="dropdown-item ${selectedStoreObj?.name === store.name ? 'active' : ''}"
-             onclick="selectStore('${store.name.replace(/'/g, "\\'")}')">
-          <span>${store.name}</span>
-        </div>
-      `).join('');
-    }
-
-    // Clear loading messages
-    function clearLoadingMessages() {
-      messageTimeouts.forEach(clearTimeout);
-      messageTimeouts = [];
-    }
-
-    // Show sequential loading messages
-    function showSequentialLoading() {
-      clearLoadingMessages();
-      let msgIndex = 0;
-      const showNextMessage = () => {
-        if (msgIndex < loadingMessages.length) {
-          loadingMessage.textContent = loadingMessages[msgIndex];
-          msgIndex++;
-          messageTimeouts.push(setTimeout(showNextMessage, 1500)); // Even 1.5s per message
-        }
-      };
-      showNextMessage();
-    }
-
-    // Fetch pincodes for selected store (via local proxy)
-    async function fetchPincodes(storeName) {
-      showSequentialLoading();
-      fetchBtn.disabled = true;
-      try {
-        const response = await fetch('http://localhost:3001/pincodes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ store: storeName })
-        });
-        if (!response.ok) throw new Error(`Proxy error: ${response.status}`);
-        const data = await response.json();
-        return data.results || [];
-      } catch (error) {
-        resultsContent.innerHTML = `<div class="p-8 text-center text-red-600">
-          <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-          <p>Failed to fetch pincodes: ${error.message}</p>
-          <button onclick="fetchPincodesForSelected()" class="mt-4 text-teal-500 hover:underline">Retry</button>
-        </div>`;
-        return [];
-      } finally {
-        clearLoadingMessages();
-        fetchBtn.disabled = false;
-      }
-    }
-
-    // Wrapper for fetch on button click
-    window.fetchPincodesForSelected = async () => {
-      if (!selectedStoreObj) {
-        alert('Please select a store first.');
-        return;
-      }
-      resultsSection.classList.remove('hidden');
-      const results = await fetchPincodes(selectedStoreObj.name);
-      renderPincodes(results, selectedStoreObj.name);
-    };
-
-    // Render pincodes table
-    function renderPincodes(results, storeName) {
-      if (results.length === 0) {
-        resultsContent.innerHTML = '<div class="no-results"><i class="fas fa-map text-2xl mb-2 text-gray-400"></i><p>No pincodes found for this store.</p></div>';
-        return;
-      }
-      // Sort by distance ascending
-      results.sort((a, b) => a.distance_km - b.distance_km);
-      resultsContent.innerHTML = `
-        <div class="overflow-x-auto">
-          <table class="results-table">
-            <thead>
-              <tr>
-                <th>Pincode</th>
-                <th>Distance (km)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${results.map(r => `
-                <tr>
-                  <td class="font-mono">${r.pincode}</td>
-                  <td>${r.distance_km.toFixed(1)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-        <p class="text-sm text-gray-500 mt-4 text-center">${results.length} pincodes within ${Math.max(...results.map(r => r.distance_km)).toFixed(1)} km</p>
-      `;
-    }
-
-    // Select store (no auto-fetch)
-    window.selectStore = function(name) {
-      selectedStoreObj = allStores.find(s => s.name === name);
-      if (!selectedStoreObj) return;
-      selectedStore.textContent = name;
+    storeList.addEventListener('click', (e) => {
+      const item = e.target.closest('.dropdown-item');
+      if (!item) return;
+      selectedStoreName = item.dataset.name;
+      selectedStore.textContent = selectedStoreName;
       renderStores(allStores);
       dropdownMenu.classList.remove('open');
       chevron.classList.remove('rotate-180');
       searchInput.value = '';
-
-      // Show fetch button and hide results if any
       fetchBtn.classList.remove('hidden');
       resultsSection.classList.add('hidden');
-    };
+    });
 
-    // Search functionality
-    searchInput.oninput = () => {
-      const term = searchInput.value.toLowerCase().trim();
-      const filtered = allStores.filter(s => s.name.toLowerCase().includes(term));
-      renderStores(filtered);
-    };
-
-    // Load stores from API
-    const API_URL = 'https://api.thesleepcompany.in/stores';
-    const API_KEY = 'KPwkS7MFb71KXrezuxUYJaf4EnFGvgkK9kgWaf7q';
-
-    async function loadStores() {
-      try {
-        const res = await fetch(API_URL, { headers: { 'x-api-key': API_KEY } });
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        const data = await res.json();
-
-        allStores = data.stores
-          ?.map(store => ({
-            id: store.storeId || store.getStoreLocationKey || store.storeName,
-            name: (store.storeName || '').trim()
-          }))
-          .filter(s => s.name) || [];
-
-        // Sort alphabetically
-        allStores.sort((a, b) => a.name.localeCompare(b.name));
-
-        if (allStores.length > 0) {
-          renderStores(allStores);
-          // Auto-select the first store (no fetch)
-          selectStore(allStores[0].name);
-          fetchBtn.classList.remove('hidden');
-        } else {
-          storeList.innerHTML = `<div class="p-8 text-center text-orange-600">No stores found in API response</div>`;
-          selectedStore.textContent = 'No stores available';
-        }
-      } catch (err) {
-        storeList.innerHTML = `<div class="p-8 text-center text-red-600">
-          <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-          <p>Failed to load stores. Check connection or API access.</p>
-          <button onclick="loadStores()" class="mt-4 text-teal-500 hover:underline">Retry</button>
-        </div>`;
-        selectedStore.textContent = 'Error loading stores';
+    function renderStores(list) {
+      if (!list.length) {
+        storeList.innerHTML = `<div class="p-12 text-center text-gray-500">No stores found</div>`;
+        return;
       }
+      storeList.innerHTML = list.map((store, i) => `
+        <div class="dropdown-item" data-name="${store.name}" style="animation-delay: ${i * 0.05}s">
+          <i class="fas fa-store text-teal-500"></i>
+          <span>${store.name}</span>
+        </div>
+      `).join('');
+      setTimeout(() => document.querySelectorAll('.dropdown-item').forEach(el => el.classList.add('visible')), 50);
     }
 
-    // Initialize
-    loadStores();
+    searchInput.addEventListener('input', () => {
+      const term = searchInput.value.toLowerCase();
+      const filtered = allStores.filter(s => s.name.toLowerCase().includes(term));
+      renderStores(filtered);
+    });
+
+    function showOverlay() {
+      contentOverlay.classList.add('active');
+      let i = 0;
+      const next = () => {
+        if (i < loadingMessages.length && contentOverlay.classList.contains('active')) {
+          loadingText.textContent = loadingMessages[i++];
+          messageTimeouts.push(setTimeout(next, 8000));
+        }
+      };
+      next();
+    }
+
+    function hideOverlay() {
+      messageTimeouts.forEach(clearTimeout);
+      messageTimeouts = [];
+      contentOverlay.classList.remove('active');
+    }
+
+    function exportToExcel() {
+      if (!currentResults.length) return;
+      const data = currentResults.map(r => ({
+        Pincode: r.pincode,
+        "Distance (km)": r.distance_km.toFixed(1)
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pincodes");
+      const safeName = (selectedStoreName || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+      XLSX.writeFile(wb, `TSC_Pincodes_${safeName}.xlsx`);
+    }
+
+    fetchBtn.addEventListener('click', async () => {
+      resultsSection.classList.remove('hidden');
+      resultsContent.innerHTML = '';
+      showOverlay();
+
+      try {
+        const res = await fetch('http://localhost:3001/pincodes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ store: selectedStoreName })
+        });
+        const { results = [] } = await res.json();
+
+        hideOverlay();
+        currentResults = results;
+
+        if (!results.length) {
+          resultsContent.innerHTML = `<div class="text-center py-20 text-gray-500">No serviceable pincodes found</div>`;
+          return;
+        }
+
+        results.sort((a, b) => a.distance_km - b.distance_km);
+        const maxDist = Math.max(...results.map(r => r.distance_km)).toFixed(1);
+
+        resultsContent.innerHTML = `
+          <div class="text-center mb-8">
+            <p class="text-xl font-semibold text-gray-800">Found <strong class="text-teal-600">${results.length}</strong> serviceable pincodes!</p>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-gray-100 mb-6">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-teal-50 to-cyan-50">
+                <tr>
+                  <th class="p-4 text-left font-semibold text-teal-800">Pincode</th>
+                  <th class="p-4 text-left font-semibold text-teal-800">Distance</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${results.map(r => `
+                  <tr class="border-b hover:bg-teal-50 transition">
+                    <td class="p-4 font-mono font-semibold text-teal-700">${r.pincode}</td>
+                    <td class="p-4">${r.distance_km.toFixed(1)} km</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <p class="text-sm text-gray-600">Maximum radius: <span class="font-bold text-teal-600">${maxDist} km</span></p>
+            <button onclick="exportToExcel()" class="export-btn flex items-center gap-2">
+              <i class="fas fa-file-excel"></i> Download Excel
+            </button>
+          </div>
+        `;
+      } catch (err) {
+        hideOverlay();
+        resultsContent.innerHTML = `<div class="text-center py-12 text-red-600">Failed to fetch pincodes</div>`;
+      }
+    });
+
+    (async () => {
+      try {
+        const res = await fetch('https://api.thesleepcompany.in/stores', {
+          headers: { 'x-api-key': 'KPwkS7MFb71KXrezuxUYJaf4EnFGvgkK9kgWaf7q' }
+        });
+        const { stores = [] } = await res.json();
+        allStores = stores.map(s => ({ name: (s.storeName || '').trim() })).filter(s => s.name).sort((a,b) => a.name.localeCompare(b.name));
+
+        if (allStores.length) {
+          renderStores(allStores);
+          selectedStoreName = allStores[0].name;
+          selectedStore.textContent = selectedStoreName;
+          fetchBtn.classList.remove('hidden');
+        }
+      } catch (err) {
+        storeList.innerHTML = `<div class="p-12 text-center text-red-600">Failed to load stores</div>`;
+      }
+    })();
   </script>
 </body>
 </html>
