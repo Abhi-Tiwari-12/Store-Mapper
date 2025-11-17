@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pincode Finder - TSC Store Mapper</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background: #F7FAFC; }
+    .sidebar { transition: transform 0.3s ease; }
+    .sidebar-hidden { transform: translateX(-100%); }
+    .nav-item:hover { background-color: #374151; }
+    .nav-item.active { background-color: #14b8a6; }
+    .dropdown-btn {
+      background: white;
+      border: 1.5px solid #d1d5db;
+      padding: 1rem 1.2rem;
+      border-radius: 0.9rem;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.25s ease;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+    .dropdown-btn:hover {
+      border-color: #14b8a6;
+      box-shadow: 0 4px 14px rgba(20,184,166,0.25);
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 10px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid #e5e7eb;
+      border-radius: 1rem;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+      overflow: hidden;
+      z-index: 50;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px) scale(0.98);
+      transition: all 0.25s ease;
+    }
+    .dropdown-menu.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+    .dropdown-item {
+      padding: 1rem 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      transition: all 0.25s ease;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover {
+      background: #ecfdf5;
+      padding-left: 1.5rem;
+    }
+    .dropdown-item.active {
+      background: #ccfbf1;
+      border-left: 4px solid #14b8a6;
+      font-weight: 600;
+    }
+    #storeList::-webkit-scrollbar { width: 8px; }
+    #storeList::-webkit-scrollbar-thumb {
+      background: #2dd4bf;
+      border-radius: 10px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f4f6;
+      border-top: 4px solid #14b8a6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .results-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      text-align: center;
+      color: #6b7280;
+    }
+    .loading-message {
+      font-size: 1rem;
+      margin-top: 1rem;
+      color: #374151;
+      font-weight: 500;
+    }
+    .results-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 1rem;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .results-table th,
+    .results-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .results-table th {
+      background-color: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+    }
+    .results-table th:first-child, .results-table td:first-child {
+      width: 50%;
+      padding-left: 1.5rem;
+    }
+    .results-table th:last-child, .results-table td:last-child {
+      width: 50%;
+      padding-right: 1.5rem;
+    }
+    .results-table tr:hover {
+      background-color: #f8fafc;
+    }
+    .results-table td:first-child {
+      font-family: 'Courier New', monospace;
+      font-weight: 500;
+    }
+    .fetch-btn {
+      background: #14b8a6;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 200px;
+    }
+    .fetch-btn:hover:not(:disabled) {
+      background: #0d9488;
+      transform: translateY(-1px);
+    }
+    .fetch-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .no-results {
+      text-align: center;
+      padding: 2rem;
+      color: #6b7280;
+    }
+    @media (max-width: 640px) {
+      .results-table {
+        font-size: 0.875rem;
+      }
+      .results-table th,
+      .results-table td {
+        padding: 0.5rem;
+      }
+      .results-table th:first-child, .results-table td:first-child {
+        padding-left: 0.75rem;
+      }
+      .results-table th:last-child, .results-table td:last-child {
+        padding-right: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full w-64 bg-gray-900 text-white p-6 flex flex-col z-30 md:flex">
+    <div class="flex items-center mb-8">
+      <i class="fas fa-store text-2xl text-teal-400 mr-3"></i>
+      <h2 class="text-xl font-bold">TSC Mapper</h2>
+    </div>
+    <nav class="flex-1">
+      <ul class="space-y-2">
+        <li><a href="Mapper.html" class="nav-item flex items-center p-3 rounded-lg"><i class="fas fa-home mr-3"></i>Home</a></li>
+        <li><a href="pincode-finder.html" class="nav-item flex items-center p-3 rounded-lg bg-teal-500 active"><i class="fas fa-search-location mr-3"></i>Pincode Finder</a></li>
+        <li><a href="result.html" class="nav-item flex items-center p-3 rounded-lg"><i class="fas fa-table mr-3"></i>Results</a></li>
+        <li><a href="index.html" class="nav-item flex items-center p-3 rounded-lg"><i class="fas fa-sign-out-alt mr-3"></i>Logout</a></li>
+      </ul>
+    </nav>
+    <button id="sidebarToggle" class="md:hidden absolute top-4 -right-12 bg-gray-800 p-3 rounded-r-lg text-white shadow-lg">
+      <i class="fas fa-bars text-xl"></i>
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col md:ml-64" id="mainContent">
+    <header class="bg-white shadow sticky top-0 z-20">
+      <div class="max-w-7xl mx-auto py-4 px-6 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Pincode Finder</h1>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-600">Admin User</span>
+          <i class="fas fa-user-circle text-2xl text-teal-400"></i>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-6 lg:p-8">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+          <h2 class="text-xl font-semibold text-gray-800 mb-6">Select a Store</h2>
+
+          <!-- Dropdown -->
+          <div class="relative">
+            <button id="dropdownBtn" class="w-full dropdown-btn">
+              <span id="selectedStore" class="text-gray-900">Loading stores...</span>
+              <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="chevron"></i>
+            </button>
+
+            <div id="dropdownMenu" class="dropdown-menu">
+              <div class="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+                <input type="text" id="searchInput" placeholder="Search store..."
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+              </div>
+              <div id="storeList" class="max-h-96 overflow-y-auto">
+                <div class="p-12 text-center text-gray-500">
+                  <div class="spinner"></div>
+                  <p class="mt-4">Loading stores...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fetch Button -->
+          <button id="fetchBtn" class="fetch-btn hidden" onclick="fetchPincodesForSelected()">
+            <i class="fas fa-search mr-2"></i>Fetch Pincodes
+          </button>
+
+          <!-- Results Section -->
+          <div id="resultsSection" class="mt-8 hidden">
+            <div id="resultsContent" class="results-loading">
+              <div class="spinner"></div>
+              <p class="loading-message" id="loadingMessage">Analyzing your preference...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="bg-gray-900 text-white py-6 text-center text-sm">
+      Product by Abhishek Tiwari | TSC Store Mapper v2.0
+    </footer>
+  </div>
+
+  <script>
+    // Elements
+    const dropdownBtn = document.getElementById('dropdownBtn');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const searchInput = document.getElementById('searchInput');
+    const storeList = document.getElementById('storeList');
+    const chevron = document.getElementById('chevron');
+    const selectedStore = document.getElementById('selectedStore');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const mainContent = document.getElementById('mainContent');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsContent = document.getElementById('resultsContent');
+    const loadingMessage = document.getElementById('loadingMessage');
+
+    let allStores = [];
+    let selectedStoreObj = null;
+    let messageTimeouts = [];
+
+    const loadingMessages = [
+      "Analyzing your preference...",
+      "Fetching the pincodes...",
+      "Calculating distances...",
+      "Generating tabular data...",
+      "Almost ready! Optimizing results..."
+    ];
+
+    // Sidebar Toggle (Mobile)
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar-hidden');
+      mainContent.classList.toggle('md:ml-0', sidebar.classList.contains('sidebar-hidden'));
+    });
+
+    // Dropdown Toggle
+    dropdownBtn.onclick = (e) => {
+      e.stopPropagation();
+      dropdownMenu.classList.toggle('open');
+      chevron.classList.toggle('rotate-180');
+      if (dropdownMenu.classList.contains('open')) searchInput.focus();
+    };
+
+    document.addEventListener('click', (e) => {
+      if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+        dropdownMenu.classList.remove('open');
+        chevron.classList.remove('rotate-180');
+      }
+    });
+
+    // Render store list (simple, no bubble)
+    function renderStores(list) {
+      if (list.length === 0) {
+        storeList.innerHTML = `<div class="p-8 text-center text-gray-500">No stores found</div>`;
+        return;
+      }
+      storeList.innerHTML = list.map(store => `
+        <div class="dropdown-item ${selectedStoreObj?.name === store.name ? 'active' : ''}"
+             onclick="selectStore('${store.name.replace(/'/g, "\\'")}')">
+          <span>${store.name}</span>
+        </div>
+      `).join('');
+    }
+
+    // Clear loading messages
+    function clearLoadingMessages() {
+      messageTimeouts.forEach(clearTimeout);
+      messageTimeouts = [];
+    }
+
+    // Show sequential loading messages
+    function showSequentialLoading() {
+      clearLoadingMessages();
+      let msgIndex = 0;
+      const showNextMessage = () => {
+        if (msgIndex < loadingMessages.length) {
+          loadingMessage.textContent = loadingMessages[msgIndex];
+          msgIndex++;
+          messageTimeouts.push(setTimeout(showNextMessage, 1500)); // Even 1.5s per message
+        }
+      };
+      showNextMessage();
+    }
+
+    // Fetch pincodes for selected store (via local proxy)
+    async function fetchPincodes(storeName) {
+      showSequentialLoading();
+      fetchBtn.disabled = true;
+      try {
+        const response = await fetch('http://localhost:3001/pincodes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ store: storeName })
+        });
+        if (!response.ok) throw new Error(`Proxy error: ${response.status}`);
+        const data = await response.json();
+        return data.results || [];
+      } catch (error) {
+        resultsContent.innerHTML = `<div class="p-8 text-center text-red-600">
+          <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+          <p>Failed to fetch pincodes: ${error.message}</p>
+          <button onclick="fetchPincodesForSelected()" class="mt-4 text-teal-500 hover:underline">Retry</button>
+        </div>`;
+        return [];
+      } finally {
+        clearLoadingMessages();
+        fetchBtn.disabled = false;
+      }
+    }
+
+    // Wrapper for fetch on button click
+    window.fetchPincodesForSelected = async () => {
+      if (!selectedStoreObj) {
+        alert('Please select a store first.');
+        return;
+      }
+      resultsSection.classList.remove('hidden');
+      const results = await fetchPincodes(selectedStoreObj.name);
+      renderPincodes(results, selectedStoreObj.name);
+    };
+
+    // Render pincodes table
+    function renderPincodes(results, storeName) {
+      if (results.length === 0) {
+        resultsContent.innerHTML = '<div class="no-results"><i class="fas fa-map text-2xl mb-2 text-gray-400"></i><p>No pincodes found for this store.</p></div>';
+        return;
+      }
+      // Sort by distance ascending
+      results.sort((a, b) => a.distance_km - b.distance_km);
+      resultsContent.innerHTML = `
+        <div class="overflow-x-auto">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Pincode</th>
+                <th>Distance (km)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${results.map(r => `
+                <tr>
+                  <td class="font-mono">${r.pincode}</td>
+                  <td>${r.distance_km.toFixed(1)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-sm text-gray-500 mt-4 text-center">${results.length} pincodes within ${Math.max(...results.map(r => r.distance_km)).toFixed(1)} km</p>
+      `;
+    }
+
+    // Select store (no auto-fetch)
+    window.selectStore = function(name) {
+      selectedStoreObj = allStores.find(s => s.name === name);
+      if (!selectedStoreObj) return;
+      selectedStore.textContent = name;
+      renderStores(allStores);
+      dropdownMenu.classList.remove('open');
+      chevron.classList.remove('rotate-180');
+      searchInput.value = '';
+
+      // Show fetch button and hide results if any
+      fetchBtn.classList.remove('hidden');
+      resultsSection.classList.add('hidden');
+    };
+
+    // Search functionality
+    searchInput.oninput = () => {
+      const term = searchInput.value.toLowerCase().trim();
+      const filtered = allStores.filter(s => s.name.toLowerCase().includes(term));
+      renderStores(filtered);
+    };
+
+    // Load stores from API
+    const API_URL = 'https://api.thesleepcompany.in/stores';
+    const API_KEY = 'KPwkS7MFb71KXrezuxUYJaf4EnFGvgkK9kgWaf7q';
+
+    async function loadStores() {
+      try {
+        const res = await fetch(API_URL, { headers: { 'x-api-key': API_KEY } });
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const data = await res.json();
+
+        allStores = data.stores
+          ?.map(store => ({
+            id: store.storeId || store.getStoreLocationKey || store.storeName,
+            name: (store.storeName || '').trim()
+          }))
+          .filter(s => s.name) || [];
+
+        // Sort alphabetically
+        allStores.sort((a, b) => a.name.localeCompare(b.name));
+
+        if (allStores.length > 0) {
+          renderStores(allStores);
+          // Auto-select the first store (no fetch)
+          selectStore(allStores[0].name);
+          fetchBtn.classList.remove('hidden');
+        } else {
+          storeList.innerHTML = `<div class="p-8 text-center text-orange-600">No stores found in API response</div>`;
+          selectedStore.textContent = 'No stores available';
+        }
+      } catch (err) {
+        storeList.innerHTML = `<div class="p-8 text-center text-red-600">
+          <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+          <p>Failed to load stores. Check connection or API access.</p>
+          <button onclick="loadStores()" class="mt-4 text-teal-500 hover:underline">Retry</button>
+        </div>`;
+        selectedStore.textContent = 'Error loading stores';
+      }
+    }
+
+    // Initialize
+    loadStores();
+  </script>
+</body>
+</html>
