@@ -229,6 +229,14 @@
       "Almost ready!"
     ];
 
+    // AUTO-SWITCH PROXY URL: Local dev vs Live on Netlify
+    const getProxyUrl = () => {
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        return 'http://localhost:3001';                    // Your local proxy
+      }
+      return 'https://pincode-proxy.onrender.com';         // LIVE PROXY (yours!)
+    };
+
     dropdownBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       dropdownMenu.classList.toggle('open');
@@ -307,18 +315,25 @@
       XLSX.writeFile(wb, `TSC_Pincodes_${safeName}.xlsx`);
     }
 
+    // MAIN FETCH BUTTON — NOW FIXED & WORKING
     fetchBtn.addEventListener('click', async () => {
       resultsSection.classList.remove('hidden');
       resultsContent.innerHTML = '';
       showOverlay();
 
       try {
-  const res = await fetch('https://pincode-proxy.onrender.com', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ store: selectedStoreName })
-  });
-        const { results = [] } = await res.json();
+        const response = await fetch(`${getProxyUrl()}/pincodes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ store: selectedStoreName })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const results = data.results || [];
 
         hideOverlay();
         currentResults = results;
@@ -362,19 +377,29 @@
             </button>
           </div>
         `;
+
       } catch (err) {
+        console.error('Fetch error:', err);
         hideOverlay();
-        resultsContent.innerHTML = `<div class="text-center py-12 text-red-600">Failed to fetch pincodes</div>`;
+        resultsContent.innerHTML = `
+          <div class="text-center py-12 text-red-600">
+            <p>Failed to fetch pincodes</p>
+            <p class="text-sm mt-2">Please try again in a few seconds.</p>
+          </div>`;
       }
     });
 
+    // Load store list from The Sleep Company API
     (async () => {
       try {
         const res = await fetch('https://api.thesleepcompany.in/stores', {
           headers: { 'x-api-key': 'KPwkS7MFb71KXrezuxUYJaf4EnFGvgkK9kgWaf7q' }
         });
         const { stores = [] } = await res.json();
-        allStores = stores.map(s => ({ name: (s.storeName || '').trim() })).filter(s => s.name).sort((a,b) => a.name.localeCompare(b.name));
+        allStores = stores
+          .map(s => ({ name: (s.storeName || '').trim() }))
+          .filter(s => s.name)
+          .sort((a, b) => a.name.localeCompare(b.name));
 
         if (allStores.length) {
           renderStores(allStores);
@@ -386,6 +411,6 @@
         storeList.innerHTML = `<div class="p-12 text-center text-red-600">Failed to load stores</div>`;
       }
     })();
-  </script>
+</script>
 </body>
 </html>
