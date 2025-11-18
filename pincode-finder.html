@@ -313,11 +313,11 @@
       showOverlay();
 
       try {
-        const res = await fetch('http://localhost:3001/pincodes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ store: selectedStoreName })
-        });
+  const res = await fetch('https://pincode-proxy-india.onrender.com/pincodes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ store: selectedStoreName })
+  });
         const { results = [] } = await res.json();
 
         hideOverlay();
