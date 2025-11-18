@@ -360,8 +360,7 @@
         const response = await fetch(getProxyUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ store: "all" })
-          // NO timeout → Google Apps Script can take 40+ seconds
+          body: JSON.stringify({ store: selectedStoreName })          // NO timeout → Google Apps Script can take 40+ seconds
         });
 
         if (!response.ok) {
