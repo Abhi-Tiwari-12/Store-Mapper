@@ -203,7 +203,7 @@
     </footer>
   </div>
 
-  <script>
+<script>
     const dropdownBtn = document.getElementById('dropdownBtn');
     const dropdownMenu = document.getElementById('dropdownMenu');
     const searchInput = document.getElementById('searchInput');
@@ -221,58 +221,44 @@
     let messageTimeouts = [];
     let currentResults = [];
 
-    const CACHE_KEY_PREFIX = 'tsc_pincodes_';
+    const CACHE_KEY = 'tsc_pincodes_all_v2';
     const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
     const loadingMessages = [
-      "Analyzing your preference...",
-      "Fetching pincodes from server...",
-      "Calculating distances...",
-      "Preparing results...",
-      "Almost ready!"
+      "Waking up the server (this can take up to 40 seconds)...",
+      "Fetching 36,000+ pincodes from Google Sheets...",
+      "Processing distances for every store location...",
+      "Almost done – hang tight!",
+      "Finalizing your results..."
     ];
 
-    // AUTO PROXY URL
+    // PROXY URL
     const getProxyUrl = () => {
       return location.hostname === 'localhost' || location.hostname === '127.0.0.1'
         ? 'http://localhost:3001/pincodes'
         : 'https://pincode-proxy.onrender.com/pincodes';
     };
 
-    // MAP TSC STORE NAMES → ACCEPTED VALUES (fixes 400 error)
-    const STORE_NAME_MAPPING = {
-      // Add any specific mappings if needed in future
-      // For now, we just send "all" — your Google Apps Script supports it!
-    };
-
-    const getValidStoreValue = (displayName) => {
-      const lower = displayName.toLowerCase();
-      // You can extend this if you want store-specific pincodes later
-      // For now, your script supports only "all" or specific e-commerce names
-      return "all";  // This is 100% accepted by your Google Apps Script
-    };
-
-    // CACHING
-    const getCacheKey = () => `${CACHE_KEY_PREFIX}all`;  // We cache only "all" for now
-    const getCachedData = () => {
+    // CACHING (instant repeat loads)
+    const getCached = () => {
       try {
-        const cached = localStorage.getItem(getCacheKey());
-        if (!cached) return null;
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp > CACHE_DURATION) {
-          localStorage.removeItem(getCacheKey());
+        const item = localStorage.getItem(CACHE_KEY);
+        if (!item) return null;
+        const { data, time } = JSON.parse(item);
+        if (Date.now() - time > CACHE_DURATION) {
+          localStorage.removeItem(CACHE_KEY);
           return null;
         }
         return data;
-      } catch {
-        return null;
-      }
+      } catch { return null; }
     };
-    const setCachedData = (data) => {
+
+    const setCached = (data) => {
       try {
-        localStorage.setItem(getCacheKey(), JSON.stringify({ data, timestamp: Date.now() }));
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, time: Date.now() }));
       } catch (e) {
-        console.warn("Cache full");
+        console.warn("Cache full – clearing old data");
+        localStorage.clear();
       }
     };
 
@@ -330,7 +316,7 @@
       const next = () => {
         if (i < loadingMessages.length && contentOverlay.classList.contains('active')) {
           loadingText.textContent = loadingMessages[i++];
-          messageTimeouts.push(setTimeout(next, 8000));
+          messageTimeouts.push(setTimeout(next, 10000));
         }
       };
       next();
@@ -351,53 +337,53 @@
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Pincodes");
-      const safeName = (selectedStoreName || "All_Stores").replace(/[^a-zA-Z0-9]/g, "_");
-      XLSX.writeFile(wb, `TSC_Pincodes_${safeName}.xlsx`);
+      XLSX.writeFile(wb, `TSC_Pincodes_All_Stores.xlsx`);
     }
 
-    // MAIN FETCH — NOW 100% WORKING
+    // MAIN FETCH – NO TIMEOUTS AT ALL
     fetchBtn.addEventListener('click', async () => {
       resultsSection.classList.remove('hidden');
       resultsContent.innerHTML = '';
       showOverlay();
 
-      // 1. Try cache first
-      const cached = getCachedData();
+      // 1. Try cache first → instant!
+      const cached = getCached();
       if (cached) {
-      hideOverlay();
-      currentResults = cached;
-      renderResults(cached, true);
-      return;
-    }
+        hideOverlay();
+        currentResults = cached;
+        renderResults(cached, true);
+        return;
+      }
 
-      // 2. Fetch from server — using "all" (accepted value)
+      // 2. Fetch from server – we wait as long as it takes
       try {
         const response = await fetch(getProxyUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ store: "all" })  // This is the fix!
+          body: JSON.stringify({ store: "all" })
+          // NO timeout → Google Apps Script can take 40+ seconds
         });
 
         if (!response.ok) {
           const text = await response.text();
-          throw new Error(`Server ${response.status}: ${text}`);
+          throw new Error(`Server error ${response.status}: ${text}`);
         }
 
         const data = await response.json();
         const results = data.results || [];
 
-        setCachedData(results);
+        setCached(results);
         hideOverlay();
         currentResults = results;
         renderResults(results, false);
 
       } catch (err) {
-        console.error('Fetch failed:', err);
+        console.error("Fetch failed:", err);
         hideOverlay();
         resultsContent.innerHTML = `
           <div class="text-center py-12 text-red-600">
-            <p>Network error</p>
-            <p class="text-sm mt-2">Check internet connection</p>
+            <p>Connection failed or server too slow</p>
+            <p class="text-sm mt-2">Please refresh and try again</p>
           </div>`;
       }
     });
@@ -415,7 +401,10 @@
         <div class="text-center mb-8">
           <p class="text-xl font-semibold text-gray-800">
             Found <strong class="text-teal-600">${results.length.toLocaleString()}</strong> serviceable pincodes!
-            ${fromCache ? '<span class="inline-block ml-3 px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full">Cached</span>' : ''}
+            ${fromCache 
+              ? '<span class="inline-block ml-3 px-4 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">Instant Load (Cached)</span>'
+              : '<span class="text-sm text-gray-500 block mt-2">Next visit will be instant!</span>'
+            }
           </p>
         </div>
 
@@ -428,23 +417,30 @@
               </tr>
             </thead>
             <tbody>
-              ${results.map(r => `
+              ${results.slice(0, 500).map(r => `
                 <tr class="border-b hover:bg-teal-50 transition">
                   <td class="p-4 font-mono font-semibold text-teal-700">${r.pincode}</td>
                   <td class="p-4">${r.distance_km.toFixed(1)} km</td>
                 </tr>
               `).join('')}
+              ${results.length > 500 ? `
+                <tr>
+                  <td colspan="2" class="p-6 text-center text-gray-600 font-medium">
+                    ... and ${results.length - 500} more pincodes<br>
+                    <span class="text-sm">Download Excel for complete list</span>
+                  </td>
+                </tr>
+              ` : ''}
             </tbody>
           </table>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <p class="text-sm text-gray-600">
-            Max radius: <span class="font-bold text-teal-600">${maxDist} km</span>
-            ${fromCache ? ' • <span class="text-green-600">Instant load</span>' : ''}
+            Maximum delivery radius: <span class="font-bold text-teal-600">${maxDist} km</span>
           </p>
           <button onclick="exportToExcel()" class="export-btn flex items-center gap-2">
-            <i class="fas fa-file-excel"></i> Download Excel
+            <i class="fas fa-file-excel"></i> Download Full Excel (${results.length} pincodes)
           </button>
         </div>
       `;
